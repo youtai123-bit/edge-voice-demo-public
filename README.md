@@ -30,13 +30,13 @@ UMC202HD INPUT1 → ALSA → 原始输入统一 VAD 分段
 ## 获取与本地检查
 
 ```bash
-git clone https://github.com/youtai123-bit/edge-voice-demo.git
-cd edge-voice-demo
+git clone https://github.com/youtai123-bit/edge-voice-demo-public.git
+cd edge-voice-demo-public
 python scripts/check_sources.py
 python scripts/test_logic.py
 ```
 
-私有仓库需要已有 GitHub 访问权限。上述两条检查只用 Python 标准库，不加载模型、不打开声卡、不联网。`test_logic.py` 覆盖 19 项选择、语言、纠错和后端文件合同测试；不等于完整设备或神经推理验证。
+公开源码可直接克隆。上述两条检查只用 Python 标准库，不加载模型、不打开声卡、不联网。`test_logic.py` 覆盖 19 项选择、语言、纠错和后端文件合同测试；不等于完整设备或神经推理验证。
 
 ## 在已准备好的 Pi 上运行
 
