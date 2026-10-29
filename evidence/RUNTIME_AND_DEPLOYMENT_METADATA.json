@@ -1,0 +1,115 @@
+{
+  "observed_host_utc": "2026-10-28T19:31:17.171773+00:00",
+  "returncode": 0,
+  "stderr": "",
+  "new_inference_training_recording_playback_or_config_changes": 0,
+  "runtime": {
+    "python": "3.13.5",
+    "executable": "${DEVICE_ROOT}/venv/bin/python",
+    "architecture": "aarch64",
+    "packages": {
+      "numpy": "2.2.4",
+      "onnxruntime": "1.28.0",
+      "sherpa-onnx": "1.13.5",
+      "sounddevice": null,
+      "soundfile": null
+    },
+    "deployed_source": {
+      "app/voice_demo_multicandidate.py": {
+        "bytes": 53332,
+        "sha256": "dc134b3266d103fea6a87ecd32476bf026455fad473f932470a713fa3bc877e7"
+      },
+      "app/voice_demo.py": {
+        "bytes": 21840,
+        "sha256": "f9be7ca07c399bd95551c8464df8da1fd5d54aba5504bbc89a85dcab7d4d16c0"
+      },
+      "app/asr_backends.py": {
+        "bytes": 2295,
+        "sha256": "f6ae57fd34f1c9f9636a29b326c78057ee3e750c81acc8d21b5716c9d53e56bd"
+      },
+      "app/fastenhancer_onnx.py": {
+        "bytes": 4865,
+        "sha256": "f5321649cb075f11a72ad5349761021a59fd1f0c5a5021bb1e2f918a24892ee0"
+      },
+      "app/candidate_selection.py": {
+        "bytes": 7606,
+        "sha256": "e47358c95e0f270915d99fe7122071aa3a0c96ef8f51d9ada52ca8f9c31f914c"
+      },
+      "app/language_selection.py": {
+        "bytes": 1397,
+        "sha256": "098c0ed82d9b83f34df2b8e40e0f80c1549fe52452d9ecd77ebc85092c4876b6"
+      },
+      "app/benchmark_multicandidate.py": {
+        "bytes": 3711,
+        "sha256": "006bf312c44df91859de2693b6ceae605df4e567864268d2996d23e388df896a"
+      }
+    },
+    "source_bytes_read": 95046,
+    "clock": {
+      "returncode": 0,
+      "stdout": "2026-09-01T19:18:43+08:00\n",
+      "stderr": ""
+    },
+    "NTP": {
+      "returncode": 0,
+      "stdout": "Timezone=Asia/Shanghai\nNTP=yes\nNTPSynchronized=no\n",
+      "stderr": ""
+    },
+    "temperature": {
+      "returncode": 0,
+      "stdout": "temp=47.2'C\n",
+      "stderr": ""
+    },
+    "throttling": {
+      "returncode": 0,
+      "stdout": "throttled=0x0\n",
+      "stderr": ""
+    },
+    "ALSA_status": "state: RUNNING\nowner_pid   : 1736\ntrigger_time: 18.597918598\ntstamp      : 0.000000000\ndelay       : 909\navail       : 861\navail_max   : 1583\n-----\nhw_ptr      : 694882653\nappl_ptr    : 694881792\n",
+    "current_service": {
+      "phase": "listening",
+      "message": "请继续说话",
+      "speech_active": false,
+      "level_dbfs": -69.1,
+      "utterance_count": 5,
+      "dropped_utterances": 0,
+      "uptime_s": 14490.2,
+      "error": "",
+      "language": "ja",
+      "asr_backend": "ReazonSpeech（日语专用）",
+      "latest_latency_ms": 2988,
+      "latest_route": "raw",
+      "score_kind": "text_consensus_proxy"
+    },
+    "user_transcript_or_hotword_content_collected": false,
+    "latest_candidate_timing": [
+      {
+        "name": "raw",
+        "process_ms": 0,
+        "decode_ms": 101,
+        "total_ms": 101,
+        "error": ""
+      },
+      {
+        "name": "gtcrn",
+        "process_ms": 143,
+        "decode_ms": 72,
+        "total_ms": 215,
+        "error": ""
+      },
+      {
+        "name": "fastenhancer",
+        "process_ms": 78,
+        "decode_ms": 87,
+        "total_ms": 165,
+        "error": ""
+      }
+    ]
+  },
+  "_privacy_redaction": {
+    "status": "redacted_copy",
+    "fields": "user identity, hostnames, private addresses, personal deployment paths",
+    "numerical_results_changed": false,
+    "original_retained_locally_only": true
+  }
+}

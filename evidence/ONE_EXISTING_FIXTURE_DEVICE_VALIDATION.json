@@ -1,0 +1,146 @@
+{
+  "observed_utc": "2026-10-28T18:09:55.474751+00:00",
+  "transport_returncode": 0,
+  "transport_stderr": "",
+  "result": {
+    "returncode": 0,
+    "total_process_wall_s": 9.545135364000089,
+    "fixture_sha256": "ce99076fdd0801d4e338e8845aa54c9e4dbb2f2691ce4fcc348d3bf8679255fe",
+    "audio": {
+      "frames": 63095,
+      "rate": 16000,
+      "channels": 1,
+      "sample_width": 2
+    },
+    "health_before": {
+      "phase": "listening",
+      "speech_active": false,
+      "utterance_count": 0,
+      "dropped_utterances": 0,
+      "language": "ja",
+      "error": "",
+      "level_dbfs": -91.9,
+      "uptime_s": 9598.8
+    },
+    "health_after": {
+      "phase": "listening",
+      "speech_active": false,
+      "utterance_count": 0,
+      "dropped_utterances": 0,
+      "language": "ja",
+      "error": "",
+      "level_dbfs": -93.1,
+      "uptime_s": 9608.4
+    },
+    "stderr_tail": "\u001b[0;93m2026-09-01 17:57:12.189891792 [W:onnxruntime:Default, device_discovery.cc:285 GetGpuDevices] Failed to detect devices under \"/sys/class/drm/card1\": device_discovery.cc:94 ReadFileContents Failed to open file: \"/sys/class/drm/card1/device/vendor\"\u001b[m\n\u001b[0;93m2026-09-01 17:57:12.189938811 [W:onnxruntime:Default, device_discovery.cc:285 GetGpuDevices] Failed to detect devices under \"/sys/class/drm/card0\": device_discovery.cc:94 ReadFileContents Failed to open file: \"/sys/class/drm/card0/device/vendor\"\u001b[m\n",
+    "record_directory": "${DEVICE_ROOT}/device_validation_20261029",
+    "new_training_updates": 0,
+    "benchmark": {
+      "wav": "${DEVICE_ROOT}/testdata/fastenhancer_official_p232_013.wav",
+      "language": "en",
+      "asr_backend": "SenseVoice",
+      "audio_s": 3.943,
+      "parallel_wall_s": 1.15,
+      "parallel_rtf": 0.2916,
+      "peak_rss_mib": 965.2,
+      "candidates": {
+        "raw": {
+          "name": "raw",
+          "label": "原始语音",
+          "text": "SOME HAVE ACCEPTED IT AS A MIRACLE WITHOUT PHYSICAL EXPLNATION",
+          "process_ms": 0,
+          "decode_ms": 503,
+          "rms_dbfs": -20.79,
+          "clipping_ratio": 0.0,
+          "acoustic_score": 1.0,
+          "asr_text": "SOME HAVE ACCEPTED IT AS A MIRACLE WITHOUT PHYSICAL EXPLNATION",
+          "personalization_applied": false,
+          "personalization_id": "",
+          "error": "",
+          "total_ms": 503
+        },
+        "gtcrn": {
+          "name": "gtcrn",
+          "label": "GTCRN",
+          "text": "SOME HAVE ACCEPTED IT AS A MIRACLE WITHOUT PHYSICAL EXPLNATION",
+          "process_ms": 751,
+          "decode_ms": 397,
+          "rms_dbfs": -22.67,
+          "clipping_ratio": 0.0,
+          "acoustic_score": 1.0,
+          "asr_text": "SOME HAVE ACCEPTED IT AS A MIRACLE WITHOUT PHYSICAL EXPLNATION",
+          "personalization_applied": false,
+          "personalization_id": "",
+          "error": "",
+          "total_ms": 1148
+        },
+        "fastenhancer": {
+          "name": "fastenhancer",
+          "label": "FastEnhancer-B",
+          "text": "SOME HAVE ACCEPTED IT AS A MIRACLE WITHOUT PHYSICAL EXPLNATION",
+          "process_ms": 446,
+          "decode_ms": 439,
+          "rms_dbfs": -22.07,
+          "clipping_ratio": 0.0,
+          "acoustic_score": 1.0,
+          "asr_text": "SOME HAVE ACCEPTED IT AS A MIRACLE WITHOUT PHYSICAL EXPLNATION",
+          "personalization_applied": false,
+          "personalization_id": "",
+          "error": "",
+          "total_ms": 885
+        }
+      },
+      "decision": {
+        "selected_name": "raw",
+        "text": "SOME HAVE ACCEPTED IT AS A MIRACLE WITHOUT PHYSICAL EXPLNATION",
+        "consensus_score": 1.0,
+        "reliability": "high",
+        "reason": "3 路文字完全一致",
+        "candidates": [
+          {
+            "name": "raw",
+            "label": "原始语音",
+            "text": "SOME HAVE ACCEPTED IT AS A MIRACLE WITHOUT PHYSICAL EXPLNATION",
+            "normalized_text": "SOMEHAVEACCEPTEDITASAMIRACLEWITHOUTPHYSICALEXPLNATION",
+            "consensus": 1.0,
+            "exact_votes": 3,
+            "acoustic_score": 1.0,
+            "total_ms": 503,
+            "score": 1.0,
+            "selected": true
+          },
+          {
+            "name": "gtcrn",
+            "label": "GTCRN",
+            "text": "SOME HAVE ACCEPTED IT AS A MIRACLE WITHOUT PHYSICAL EXPLNATION",
+            "normalized_text": "SOMEHAVEACCEPTEDITASAMIRACLEWITHOUTPHYSICALEXPLNATION",
+            "consensus": 1.0,
+            "exact_votes": 3,
+            "acoustic_score": 1.0,
+            "total_ms": 1148,
+            "score": 0.97,
+            "selected": false
+          },
+          {
+            "name": "fastenhancer",
+            "label": "FastEnhancer-B",
+            "text": "SOME HAVE ACCEPTED IT AS A MIRACLE WITHOUT PHYSICAL EXPLNATION",
+            "normalized_text": "SOMEHAVEACCEPTEDITASAMIRACLEWITHOUTPHYSICALEXPLNATION",
+            "consensus": 1.0,
+            "exact_votes": 3,
+            "acoustic_score": 1.0,
+            "total_ms": 885,
+            "score": 0.9822,
+            "selected": false
+          }
+        ]
+      }
+    }
+  },
+  "_privacy_redaction": {
+    "status": "redacted_copy",
+    "fields": "user identity, hostnames, private addresses, personal deployment paths",
+    "numerical_results_changed": false,
+    "original_retained_locally_only": true
+  }
+}

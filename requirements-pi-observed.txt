@@ -1,0 +1,5 @@
+# Observed on the existing Pi venv at 2026-10-28T19:31:17Z.
+# Runtime pins, NOT a wheel-level full dependency lock.
+numpy==2.2.4
+onnxruntime==1.28.0
+sherpa-onnx==1.13.5

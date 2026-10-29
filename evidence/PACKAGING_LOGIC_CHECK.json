@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "tests_run": 19,
+  "failures": 0,
+  "errors": 0,
+  "scope": "New assembled source root: candidate_selection, language_selection, personalization, asr_backends pure logic.",
+  "excluded": [
+    "model inference",
+    "test_fastenhancer_onnx",
+    "test_http_callbacks",
+    "hardware audio",
+    "network"
+  ],
+  "observed_unittest_elapsed_s": 0.063,
+  "not_full_device_or_neural_validation": true
+}

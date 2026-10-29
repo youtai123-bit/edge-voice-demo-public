@@ -1,0 +1,72 @@
+{
+  "latency_source_excerpt": [
+    [
+      106,
+      "    def append_result(self, item: dict[str, Any]) -> None:"
+    ],
+    [
+      107,
+      "        with self.lock:"
+    ],
+    [
+      108,
+      "            self.latest_text = item[\"text\"]"
+    ],
+    [
+      109,
+      "            self.latest_latency_ms = item[\"latency_ms\"]"
+    ],
+    [
+      110,
+      "            self.latest_route = item[\"selected_name\"]"
+    ],
+    [
+      111,
+      "            self.latest_consensus_score = item[\"consensus_score\"]"
+    ],
+    [
+      112,
+      "            self.latest_reliability = item[\"reliability\"]"
+    ],
+    [
+      113,
+      "            self.latest_reason = item[\"reason\"]"
+    ],
+    [
+      542,
+      "                    runs = [runs_by_name[name] for name in CANDIDATE_LABELS]"
+    ],
+    [
+      543,
+      "                    decision = select_candidate(run.evidence() for run in runs)"
+    ],
+    [
+      544,
+      "                    decision_dict = decision.to_dict()"
+    ],
+    [
+      545,
+      "                    endpoint_ms = round("
+    ],
+    [
+      546,
+      "                        (time.monotonic() - utterance.endpoint_monotonic) * 1000"
+    ],
+    [
+      547,
+      "                    )"
+    ],
+    [
+      548,
+      "                    public_runs = {run.name: run.public_dict() for run in runs}"
+    ],
+    [
+      549,
+      "                    # Merge measured branch data into the selection view."
+    ],
+    [
+      550,
+      "                    candidates = []"
+    ]
+  ]
+}

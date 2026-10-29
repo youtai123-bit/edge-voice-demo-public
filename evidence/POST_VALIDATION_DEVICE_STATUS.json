@@ -1,0 +1,36 @@
+{
+  "ALSA_status_before": "state: RUNNING\nowner_pid   : 1736\ntrigger_time: 18.597918598\ntstamp      : 0.000000000\ndelay       : 1037\navail       : 1037\navail_max   : 1583\n-----\nhw_ptr      : 470648333\nappl_ptr    : 470647296\n",
+  "ALSA_status_after": "state: RUNNING\nowner_pid   : 1736\ntrigger_time: 18.597918598\ntstamp      : 0.000000000\ndelay       : 122\navail       : 74\navail_max   : 1565\n-----\nhw_ptr      : 470662730\nappl_ptr    : 470662656\n",
+  "temperature": {
+    "returncode": 0,
+    "stdout": "temp=48.3'C"
+  },
+  "throttling": {
+    "returncode": 0,
+    "stdout": "throttled=0x0"
+  },
+  "process": {
+    "returncode": 0,
+    "stdout": "1245 ${DEVICE_ROOT}/venv/bin/python ${DEVICE_ROOT}/app/voice_demo_multicandidate.py --gtcrn ${DEVICE_ROOT}/models/gtcrn_simple.onnx --fastenhancer ${DEVICE_ROOT}/models/fastenhancer_b_dns16k.onnx --vad-model ${DEVICE_ROOT}/models/silero_vad.onnx --sensevoice-dir ${DEVICE_ROOT}/models/sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09 --japanese-model-dir ${DEVICE_ROOT}/models/sherpa-onnx-zipformer-ja-reazonspeech-2024-08-01 --log-dir ${DEVICE_ROOT}/logs --device plughw:U192k,0 --min-silence 0.45 --asr-threads 1 --denoise-threads 1 --fastenhancer-threads 1"
+  },
+  "device_clock": {
+    "returncode": 0,
+    "stdout": "2026-09-01T18:00:51+08:00"
+  },
+  "health": {
+    "phase": "listening",
+    "language": "ja",
+    "speech_active": false,
+    "utterance_count": 0,
+    "dropped_utterances": 0,
+    "error": "",
+    "level_dbfs": -93.0
+  },
+  "observed_host_utc": "2026-10-28T18:13:24.982293+00:00",
+  "_privacy_redaction": {
+    "status": "redacted_copy",
+    "fields": "user identity, hostnames, private addresses, personal deployment paths",
+    "numerical_results_changed": false,
+    "original_retained_locally_only": true
+  }
+}

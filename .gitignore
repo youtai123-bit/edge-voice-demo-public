@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.venv/
+models/
+wheels/
+logs/
+*.wav
+*.mp4
+.DS_Store
+.env
+.env.*
+*.pem
+*.key

@@ -1,0 +1,52 @@
+[
+  {
+    "file": "DEVICE_VALIDATION_REPORT.md",
+    "bytes": 5245,
+    "sha256": "72a23e1cc9775de3ccdcf388ae9bafc88f4dbf2780e8641c8c406c11a02511e1"
+  },
+  {
+    "file": "LATENCY_FIELD_DEFINITION.json",
+    "bytes": 1620,
+    "sha256": "3cb6896406c3dfb72d91b5d865c1e590886f76c855c62a393fbf23ef0fce82f5"
+  },
+  {
+    "file": "ONE_EXISTING_FIXTURE_DEVICE_VALIDATION.json",
+    "bytes": 5348,
+    "sha256": "ebc376ee361f0d20adda7993554daaed9a2522ad2595eeba98f72e4949e27fd9"
+  },
+  {
+    "file": "PACKAGING_LOGIC_CHECK.json",
+    "bytes": 425,
+    "sha256": "30c5d90dd62af2d05fd3410ecbf5791130ee31b84d84ac32248f58dd5421578b"
+  },
+  {
+    "file": "PACKAGING_SOURCE_PARSE.json",
+    "bytes": 67,
+    "sha256": "2c21006c8b0132686542c651f0965b23161a6c32ceea9c970cfa92d3a63b0cdb"
+  },
+  {
+    "file": "POST_VALIDATION_DEVICE_STATUS.json",
+    "bytes": 1813,
+    "sha256": "35011efdc86089d88ea94ffd5a30aeae4c721d219b5044c042bad83af7c92e1c"
+  },
+  {
+    "file": "REDACTION_NOTICE.md",
+    "bytes": 756,
+    "sha256": "c0f0c72b91924343136a9a65411f8ef8f76b4c9988ff4a3e42b7ce218299ab81"
+  },
+  {
+    "file": "RESEARCH_NEGATIVE_RESULT.md",
+    "bytes": 2744,
+    "sha256": "c18542453ca817b01441debe227f5bdbd78673b365cb0397a051eee1b23f3932"
+  },
+  {
+    "file": "RUNTIME_AND_DEPLOYMENT_METADATA.json",
+    "bytes": 3470,
+    "sha256": "6b82fe19cdce5a15320bc66dc7fe6705b8cb435f1d6698557e2863f857da2019"
+  },
+  {
+    "file": "VALIDATION_COMPLETE.json",
+    "bytes": 394,
+    "sha256": "c1de60f647ade993dfbea8cc11ce18afbdc0bbc99e15f37f5b7ee634c2c390c5"
+  }
+]

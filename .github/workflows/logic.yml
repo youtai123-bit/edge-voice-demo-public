@@ -1,0 +1,23 @@
+name: Source identity and logic
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  logic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Verify source identities and syntax
+        run: python scripts/check_sources.py
+      - name: Run pure logic tests without models or audio
+        run: python scripts/test_logic.py

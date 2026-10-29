@@ -1,0 +1,49 @@
+{
+  "device_root": "$HOME/voice_demo/models",
+  "weights_in_archive": false,
+  "scope": "Redacted existing-device metadata; supply the actual models root. Not a fresh full weight SHA audit.",
+  "assets": [
+    {
+      "path": "gtcrn_simple.onnx",
+      "bytes_observed": 535638,
+      "role": "GTCRN增强"
+    },
+    {
+      "path": "fastenhancer_b_dns16k.onnx",
+      "bytes_observed": 413220,
+      "role": "FastEnhancer-B增强",
+      "historical_expected_sha256": "e2d8758a91a5c7d59334fdd4b871900cbd311d6694d99d9e0a77662063e60434"
+    },
+    {
+      "path": "silero_vad.onnx",
+      "bytes_observed": 643854,
+      "role": "VAD"
+    },
+    {
+      "path": "sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09/model.int8.onnx",
+      "bytes_observed": 237115547,
+      "role": "SenseVoice"
+    },
+    {
+      "path": "sherpa-onnx-sense-voice-zh-en-ja-ko-yue-int8-2025-09-09/tokens.txt",
+      "bytes_observed": 315894,
+      "role": "SenseVoice tokens"
+    },
+    {
+      "path": "sherpa-onnx-zipformer-ja-reazonspeech-2024-08-01/encoder-epoch-99-avg-1.int8.onnx",
+      "role": "日语encoder"
+    },
+    {
+      "path": "sherpa-onnx-zipformer-ja-reazonspeech-2024-08-01/decoder-epoch-99-avg-1.int8.onnx",
+      "role": "日语decoder"
+    },
+    {
+      "path": "sherpa-onnx-zipformer-ja-reazonspeech-2024-08-01/joiner-epoch-99-avg-1.int8.onnx",
+      "role": "日语joiner"
+    },
+    {
+      "path": "sherpa-onnx-zipformer-ja-reazonspeech-2024-08-01/tokens.txt",
+      "role": "日语tokens"
+    }
+  ]
+}

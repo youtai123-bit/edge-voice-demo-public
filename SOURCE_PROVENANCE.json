@@ -1,0 +1,58 @@
+[
+  {
+    "file": "app/voice_demo_multicandidate.py",
+    "bytes": 53332,
+    "sha256": "dc134b3266d103fea6a87ecd32476bf026455fad473f932470a713fa3bc877e7",
+    "matches_deployed_receipt": true,
+    "source": "voice_demo_multicandidate_20260831/voice_demo_multicandidate.py"
+  },
+  {
+    "file": "app/asr_backends.py",
+    "bytes": 2295,
+    "sha256": "f6ae57fd34f1c9f9636a29b326c78057ee3e750c81acc8d21b5716c9d53e56bd",
+    "matches_deployed_receipt": true,
+    "source": "voice_demo_multicandidate_20260831/asr_backends.py"
+  },
+  {
+    "file": "app/candidate_selection.py",
+    "bytes": 7606,
+    "sha256": "e47358c95e0f270915d99fe7122071aa3a0c96ef8f51d9ada52ca8f9c31f914c",
+    "matches_deployed_receipt": true,
+    "source": "voice_demo_multicandidate_20260831/candidate_selection.py"
+  },
+  {
+    "file": "app/fastenhancer_onnx.py",
+    "bytes": 4865,
+    "sha256": "f5321649cb075f11a72ad5349761021a59fd1f0c5a5021bb1e2f918a24892ee0",
+    "matches_deployed_receipt": true,
+    "source": "voice_demo_multicandidate_20260831/fastenhancer_onnx.py"
+  },
+  {
+    "file": "app/language_selection.py",
+    "bytes": 1397,
+    "sha256": "098c0ed82d9b83f34df2b8e40e0f80c1549fe52452d9ecd77ebc85092c4876b6",
+    "matches_deployed_receipt": true,
+    "source": "voice_demo_multicandidate_20260831/language_selection.py"
+  },
+  {
+    "file": "app/personalization.py",
+    "bytes": 7268,
+    "sha256": "d42c36f2920304447b3b0c65157ff1408af8a98a8185dc44b1bd364cfdd3e491",
+    "matches_deployed_receipt": false,
+    "source": "voice_demo_multicandidate_20260831/personalization.py"
+  },
+  {
+    "file": "app/benchmark_multicandidate.py",
+    "bytes": 3711,
+    "sha256": "006bf312c44df91859de2693b6ceae605df4e567864268d2996d23e388df896a",
+    "matches_deployed_receipt": true,
+    "source": "voice_demo_multicandidate_20260831/benchmark_multicandidate.py"
+  },
+  {
+    "file": "app/voice_demo.py",
+    "bytes": 21840,
+    "sha256": "f9be7ca07c399bd95551c8464df8da1fd5d54aba5504bbc89a85dcab7d4d16c0",
+    "matches_deployed_receipt": true,
+    "source": "voice_demo_rpi5_20260815/voice_demo.py"
+  }
+]
