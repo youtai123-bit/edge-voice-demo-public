@@ -1,0 +1,90 @@
+{
+  "kind": "Redacted validation summary selected from local private receipts",
+  "client_date": "2026-10-31",
+  "feature": "bounded prefix preview and persistent display with browser-only clear",
+  "source_identities": {
+    "voice_demo_multicandidate.py": {
+      "bytes": 61503,
+      "sha256": "28eaa04a7c2918b89cad6024c92232fc968373609559a62b9b7789ad862ac99d"
+    },
+    "partial_preview.py": {
+      "bytes": 4080,
+      "sha256": "6366e60d2522d158ab82226d1637d75e50d4d9b8f30bfbbe08cc2d5f9b37a7dd"
+    },
+    "transcript_archive.py": {
+      "bytes": 1076,
+      "sha256": "ad8441050ec98e800dd39043adfa6c3c0c6a4964cea153e440de0cc2e01906ab"
+    },
+    "transcript_view.js": {
+      "bytes": 3124,
+      "sha256": "a991c528b420a161e0c0abc9d5b19db3a02d8c5c6f6c8131eea3695567b99063"
+    }
+  },
+  "local_Python_tests": {
+    "passed": 28,
+    "skipped_existing_model_tests": 4,
+    "new_logic_tests": 8
+  },
+  "Node_display_state_tests": "pass",
+  "browser_synthetic_interaction_and_layout": "pass",
+  "Pi_prefix_probe": {
+    "status": "pass",
+    "source_fixture_samples": 63095,
+    "ASR_constructs": 1,
+    "ASR_prefix_decodes": 3,
+    "published": [
+      {
+        "samples": 16896,
+        "nonempty": true,
+        "while_speech_input_ongoing": true
+      },
+      {
+        "samples": 33280,
+        "nonempty": true,
+        "while_speech_input_ongoing": true
+      },
+      {
+        "samples": 49664,
+        "nonempty": true,
+        "while_speech_input_ongoing": true
+      }
+    ],
+    "calls": [
+      {
+        "samples": 16896,
+        "wall_s": 0.12972442599993883,
+        "nonempty": true
+      },
+      {
+        "samples": 33280,
+        "wall_s": 0.21909146300004068,
+        "nonempty": true
+      },
+      {
+        "samples": 49664,
+        "wall_s": 0.3776097770000888,
+        "nonempty": true
+      }
+    ],
+    "load_s": 1.751310943000135,
+    "prefix_only_no_future_audio": true,
+    "temporary_results_archived": 0,
+    "late_result_after_finish_visible": false,
+    "extra_audio_capture_or_playback": false,
+    "training_updates": 0
+  },
+  "deployment": {
+    "healthy": true,
+    "existing_archive_preserved": true,
+    "language_and_personalization_unchanged": true
+  },
+  "user_live_confirmation": "User confirmed partial text, append and display-only clear all work with the microphone",
+  "old_benchmark_reclassified": false,
+  "training_updates": 0,
+  "excluded_from_this_public_summary": [
+    "device identity and address",
+    "personalization bytes or hashes",
+    "private transcript text",
+    "private logs"
+  ]
+}

@@ -6,6 +6,8 @@
 
 `CandidateWorker` 对该片段执行三路处理：raw 直接识别，GTCRN 和 FastEnhancer-B 先增强再识别。各路使用独立 ASR 实例；并行任务全部完成后调用选择器，写入共享状态，由网页读取。
 
+`partial_preview.py`在说话过程中对已经采到的增长前缀发起低优先级识别，复用raw识别器并串行保护调用。临时文字可以修正，最终句子再经三路确认。`transcript_view.js`负责保留式对话框和浏览器侧清空；`transcript_archive.py`只读有限的既有转写尾部恢复历史。详见[逐步显示](REALTIME_PREVIEW.md)。
+
 设备硬件曾协商为 48kHz / S32_LE / 双通道，程序面向 16kHz 输入且只取通道0。ALSA plug 层衔接格式。这是分段后的语句级转写，不能仅凭增强网络可以逐帧运行，就把整套系统称为严格因果流式。
 
 ## 候选选择
@@ -34,6 +36,7 @@
 | 路由 | 功能 |
 |---|---|
 | `GET /` | 展示界面 |
+| `GET /transcript-view.js` | 对话框的浏览器显示状态逻辑 |
 | `GET /api/state` | 当前状态、候选与历史等信息 |
 | `GET /api/health` | 当前状态快照；可能包含转写内容，分享前要筛选 |
 | `POST /api/correction` | 保存最近一句的人工纠正 |

@@ -1,10 +1,12 @@
 [
   {
     "file": "app/voice_demo_multicandidate.py",
-    "bytes": 53332,
-    "sha256": "dc134b3266d103fea6a87ecd32476bf026455fad473f932470a713fa3bc877e7",
+    "bytes": 61503,
+    "sha256": "28eaa04a7c2918b89cad6024c92232fc968373609559a62b9b7789ad862ac99d",
     "matches_deployed_receipt": true,
-    "source": "voice_demo_multicandidate_20260831/voice_demo_multicandidate.py"
+    "source": "2026-10-31 partial preview implementation",
+    "baseline_sha256": "dc134b3266d103fea6a87ecd32476bf026455fad473f932470a713fa3bc877e7",
+    "deployed_receipt": "evidence/REALTIME_PREVIEW_VALIDATION.json"
   },
   {
     "file": "app/asr_backends.py",
@@ -54,5 +56,29 @@
     "sha256": "f9be7ca07c399bd95551c8464df8da1fd5d54aba5504bbc89a85dcab7d4d16c0",
     "matches_deployed_receipt": true,
     "source": "voice_demo_rpi5_20260815/voice_demo.py"
+  },
+  {
+    "file": "app/partial_preview.py",
+    "bytes": 4080,
+    "sha256": "6366e60d2522d158ab82226d1637d75e50d4d9b8f30bfbbe08cc2d5f9b37a7dd",
+    "matches_deployed_receipt": true,
+    "source": "2026-10-31 partial preview implementation",
+    "deployed_receipt": "evidence/REALTIME_PREVIEW_VALIDATION.json"
+  },
+  {
+    "file": "app/transcript_archive.py",
+    "bytes": 1076,
+    "sha256": "ad8441050ec98e800dd39043adfa6c3c0c6a4964cea153e440de0cc2e01906ab",
+    "matches_deployed_receipt": true,
+    "source": "2026-10-31 partial preview implementation",
+    "deployed_receipt": "evidence/REALTIME_PREVIEW_VALIDATION.json"
+  },
+  {
+    "file": "app/transcript_view.js",
+    "bytes": 3124,
+    "sha256": "a991c528b420a161e0c0abc9d5b19db3a02d8c5c6f6c8131eea3695567b99063",
+    "matches_deployed_receipt": true,
+    "source": "2026-10-31 partial preview implementation",
+    "deployed_receipt": "evidence/REALTIME_PREVIEW_VALIDATION.json"
   }
 ]

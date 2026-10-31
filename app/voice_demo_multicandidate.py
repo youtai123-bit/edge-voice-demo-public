@@ -19,6 +19,7 @@ import signal
 import subprocess
 import threading
 import time
+import uuid
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -42,6 +43,8 @@ from language_selection import (
     save_language,
 )
 from personalization import PersonalizationStore
+from partial_preview import PartialPreviewWorker, PrefixPreview, PreviewJob
+from transcript_archive import recent_transcripts
 from voice_demo import (
     CAPTURE_CHANNELS,
     SAMPLE_RATE,
@@ -74,6 +77,12 @@ def release_native_memory() -> None:
 @dataclass
 class MultiCandidateState:
     lock: threading.Lock = field(default_factory=threading.Lock)
+    session_id: str = field(default_factory=lambda: uuid.uuid4().hex)
+    partial_text: str = ""
+    partial_active: bool = False
+    partial_generation: int = 0
+    partial_language: str = ""
+    partial_decode_count: int = 0
     phase: str = "starting"
     message: str = "正在加载三路模型"
     speech_active: bool = False
@@ -118,6 +127,28 @@ class MultiCandidateState:
             self.phase = "listening"
             self.message = "请继续说话"
             self.error = ""
+
+    def begin_preview(self, language: str) -> int:
+        with self.lock:
+            self.partial_generation += 1
+            self.partial_text, self.partial_active, self.partial_language = "", True, language
+            return self.partial_generation
+
+    def preview_is_current(self, job: PreviewJob) -> bool:
+        with self.lock:
+            return (self.partial_active and self.partial_generation == job.generation
+                    and self.language == job.language and not self.language_switching)
+
+    def publish_preview(self, job: PreviewJob, text: str) -> None:
+        with self.lock:
+            if (self.partial_active and self.partial_generation == job.generation
+                    and self.language == job.language and not self.language_switching):
+                self.partial_text = text
+
+    def finish_preview(self, generation: int | None = None) -> None:
+        with self.lock:
+            if generation is None or generation == self.partial_generation:
+                self.partial_text, self.partial_active = "", False
 
     def _correction_target_unlocked(
         self,
@@ -175,6 +206,13 @@ class MultiCandidateState:
         with self.lock:
             return {
                 "phase": self.phase,
+                "session_id": self.session_id,
+                "ui_version": "partial-preview-v1",
+                "partial_text": self.partial_text,
+                "partial_active": self.partial_active,
+                "partial_generation": self.partial_generation,
+                "partial_language": self.partial_language,
+                "partial_decode_count": self.partial_decode_count,
                 "message": self.message,
                 "speech_active": self.speech_active,
                 "level_dbfs": round(self.level_dbfs, 1),
@@ -212,6 +250,7 @@ class Utterance:
     samples: np.ndarray
     vad_start_sample: int
     endpoint_monotonic: float
+    preview_generation: int | None = None
 
 
 @dataclass
@@ -340,6 +379,23 @@ class CandidateWorker(threading.Thread):
         self.personalization = personalization
         self._language_lock = threading.Lock()
         self._requested_language = self.language
+        self.final_busy = threading.Event()
+        self._raw_asr_lock = threading.Lock()
+
+    def decode_preview(self, job: PreviewJob) -> str | None:
+        if self.final_busy.is_set() or not self.work_queue.empty() or not self.state.preview_is_current(job):
+            return None
+        if not self._raw_asr_lock.acquire(blocking=False):
+            return None
+        try:
+            if self.final_busy.is_set() or self.language != job.language or not self.state.preview_is_current(job):
+                return None
+            hotwords = (self.personalization.hotword_stream(self.language)
+                        if self.personalization is not None and self.language == "ja" else None)
+            self.state.update(partial_decode_count=self.state.snapshot()["partial_decode_count"] + 1)
+            return decode(self.recognizers["raw"], job.samples, hotwords)[0]
+        finally:
+            self._raw_asr_lock.release()
 
     def request_language(self, language: str) -> dict[str, Any]:
         requested = normalize_language(language)
@@ -373,6 +429,8 @@ class CandidateWorker(threading.Thread):
         requested = self._pending_language()
         if requested is None:
             return
+        self.final_busy.set()
+        self.state.finish_preview()
         self.state.update(
             language_requested=requested,
             language_switching=True,
@@ -400,15 +458,17 @@ class CandidateWorker(threading.Thread):
                     loaded.backend,
                     ",".join(str(path) for path in loaded.model_files),
                 )
-            previous_recognizers = self.recognizers
-            self.recognizers = replacements
-            del previous_recognizers
+            with self._raw_asr_lock:
+                previous_recognizers = self.recognizers
+                self.recognizers = replacements
+                del previous_recognizers
             release_native_memory()
             self.language = requested
             self.asr_backend = replacement_backend
             save_language(self.language_state_path, requested)
         except Exception as exc:
             logging.exception("failed to switch SenseVoice language to %s", requested)
+            self.final_busy.clear()
             with self._language_lock:
                 self._requested_language = self.language
             self.state.update(
@@ -449,6 +509,7 @@ class CandidateWorker(threading.Thread):
             error="",
         )
         logging.info("language switch completed: %s", self.language)
+        self.final_busy.clear()
 
     def _run_one(
         self,
@@ -467,7 +528,13 @@ class CandidateWorker(threading.Thread):
             else:
                 raise ValueError(f"unknown candidate: {name}")
             process_ms = round((time.perf_counter() - process_started) * 1000)
-            asr_text, decode_ms = decode(self.recognizers[name], candidate, hotwords)
+            if name == "raw":
+                wait_started = time.perf_counter()
+                with self._raw_asr_lock:
+                    process_ms += round((time.perf_counter() - wait_started) * 1000)
+                    asr_text, decode_ms = decode(self.recognizers[name], candidate, hotwords)
+            else:
+                asr_text, decode_ms = decode(self.recognizers[name], candidate, hotwords)
             text = asr_text
             personalization_entry = None
             if self.personalization is not None:
@@ -518,6 +585,7 @@ class CandidateWorker(threading.Thread):
                     utterance = self.work_queue.get(timeout=0.2)
                 except queue.Empty:
                     continue
+                self.final_busy.set()
                 self.state.update(
                     phase="comparing",
                     message="三路增强与识别正在竞争…",
@@ -556,6 +624,9 @@ class CandidateWorker(threading.Thread):
                     )
                     item = {
                         "index": utterance.index,
+                        "session_id": self.state.session_id,
+                        "record_id": f"{self.state.session_id}:{utterance.index}",
+                        "preview_generation": utterance.preview_generation,
                         "time": utc_timestamp(),
                         "text": decision.text,
                         "selected_name": decision.selected_name,
@@ -579,9 +650,9 @@ class CandidateWorker(threading.Thread):
                         "candidates": candidates,
                     }
                     if decision.text:
-                        self.state.append_result(item)
                         with transcript_path.open("a", encoding="utf-8") as file:
                             file.write(json.dumps(item, ensure_ascii=False) + "\n")
+                        self.state.append_result(item)
                     else:
                         self.state.update(
                             phase="listening",
@@ -620,6 +691,8 @@ class CandidateWorker(threading.Thread):
                         error=str(exc),
                     )
                 finally:
+                    self.state.finish_preview(utterance.preview_generation)
+                    self.final_busy.clear()
                     self.work_queue.task_done()
 
 
@@ -630,6 +703,7 @@ class AudioPipeline(threading.Thread):
         state: MultiCandidateState,
         work_queue: queue.Queue[Utterance],
         stop_event: threading.Event,
+        preview_worker: PartialPreviewWorker | None = None,
     ) -> None:
         super().__init__(name="raw-vad-capture", daemon=True)
         self.args = args
@@ -637,6 +711,8 @@ class AudioPipeline(threading.Thread):
         self.work_queue = work_queue
         self.stop_event = stop_event
         self.process: subprocess.Popen[bytes] | None = None
+        self.preview = (PrefixPreview(state.begin_preview, preview_worker.offer)
+                        if preview_worker is not None else None)
 
     def _enqueue_segments(self, vad: Any, next_index: int) -> int:
         while not vad.empty():
@@ -647,12 +723,14 @@ class AudioPipeline(threading.Thread):
                 samples=samples,
                 vad_start_sample=int(segment.start),
                 endpoint_monotonic=time.monotonic(),
+                preview_generation=self.preview.finish() if self.preview is not None else None,
             )
             vad.pop()
             try:
                 self.work_queue.put_nowait(utterance)
                 next_index += 1
             except queue.Full:
+                self.state.finish_preview(utterance.preview_generation)
                 snap = self.state.snapshot()
                 self.state.update(
                     dropped_utterances=snap["dropped_utterances"] + 1,
@@ -688,7 +766,7 @@ class AudioPipeline(threading.Thread):
             "2048",
         ]
         logging.info("capture command: %s", " ".join(command))
-        next_index = 1
+        next_index = max([int(item.get("index", 0)) for item in self.state.snapshot()["transcript"]] + [0]) + 1
         pending = bytearray()
         last_level_update = 0.0
         try:
@@ -719,6 +797,13 @@ class AudioPipeline(threading.Thread):
                 next_index = self._enqueue_segments(vad, next_index)
 
                 now = time.monotonic()
+                speaking = bool(vad.is_speech_detected())
+                if self.preview is not None:
+                    preview_state = self.state.snapshot()
+                    if not preview_state["language_switching"]:
+                        self.preview.push(raw, speaking, preview_state["language"], now)
+                    else:
+                        self.preview.finish()
                 if now - last_level_update >= 0.1:
                     rms = float(np.sqrt(np.mean(raw * raw) + 1e-12))
                     dbfs = max(-120.0, 20.0 * np.log10(rms))
@@ -751,6 +836,7 @@ class AudioPipeline(threading.Thread):
                     self.process.wait(timeout=2)
                 except subprocess.TimeoutExpired:
                     self.process.kill()
+            self.state.finish_preview()
 
 
 INDEX_HTML = r"""<!doctype html>
@@ -767,12 +853,14 @@ main{width:min(1050px,93vw);margin:0 auto;padding:6vh 0 60px}.eyebrow{color:var(
 .personalization{margin-top:18px;padding:16px;border:1px solid #29435f;border-radius:14px;background:#09182a}.learning-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.learning-head b{color:var(--cyan)}.learning-head span{color:var(--muted);font-size:13px}.learn-grid{display:grid;grid-template-columns:1.4fr 1fr auto;gap:9px;margin-top:12px}.learn-grid input{min-width:0;border:1px solid #3a5d7e;border-radius:9px;background:#102137;color:var(--ink);padding:10px 11px;font:inherit}.learn-grid button,.clear-memory{border:0;border-radius:9px;background:var(--cyan);color:#06131c;padding:10px 14px;font-weight:750;cursor:pointer}.clear-memory{background:transparent;color:var(--muted);border:1px solid #35536f;padding:5px 9px;font-size:12px}.memory-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}.tags{display:flex;flex-wrap:wrap;gap:6px}.tag{background:#17314a;color:#bfe9ff;border-radius:99px;padding:4px 9px;font-size:12px}.learn-result{min-height:1.4em;margin-top:9px;color:var(--gold);font-size:13px}
 h2{margin:34px 0 13px;font-size:18px}.candidates{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.candidate{border:1px solid #29435f;border-radius:15px;background:#0c1a2b;padding:16px;min-height:145px}.candidate.selected{border-color:var(--cyan);box-shadow:0 0 0 1px var(--cyan) inset}.candidate b{color:var(--blue)}.candidate.selected b{color:var(--cyan)}.candidate .txt{font-size:18px;margin:12px 0;word-break:break-all}.candidate small{color:var(--muted)}.history{display:grid;gap:10px}.line{border-left:3px solid #355c82;padding:10px 14px;background:#0c1a2b99;border-radius:0 12px 12px 0}.line small{color:var(--muted);display:block;margin-top:5px}.empty{color:var(--muted)}
 @media(max-width:760px){.candidates{grid-template-columns:1fr}.language-control{align-items:flex-start;flex-direction:column}.language-control span{text-align:left}.learn-grid{grid-template-columns:1fr}.memory-row{align-items:flex-start;flex-direction:column}}
+
+#latest{height:300px;min-height:180px;overflow-y:auto;margin:10px 0;font-size:clamp(21px,3vw,29px);line-height:1.6;padding:4px 12px 4px 0;overflow-wrap:anywhere}.conversation-head{display:flex;justify-content:space-between;align-items:center;margin-top:22px;color:var(--cyan)}#clear-display{border:1px solid #35536f;border-radius:9px;background:transparent;color:var(--muted);padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}.transcript-line{padding:12px 0;border-bottom:1px solid #29435f66;white-space:pre-wrap}.transcript-line small{display:block;font-size:12px;line-height:1.5;color:var(--muted);margin-top:4px}.transcript-line.partial{color:var(--gold)}.transcript-line.partial::after{content:' ▍';animation:pulse .8s infinite alternate}.archive-note{font-size:12px;color:var(--muted);line-height:1.6}.learn-grid input:disabled,.learn-grid button:disabled{opacity:.55;cursor:wait}
 </style></head><body><main>
 <div class="eyebrow">RAW · GTCRN · FASTENHANCER · SENSEVOICE</div><h1>三路竞争<br>语音理解</h1>
-<section class="card" id="card"><div class="status"><span class="dot"></span><span id="message">正在连接树莓派…</span></div><div class="language-control"><label for="language">识别语种<select id="language"><option value="auto">自动识别</option><option value="zh">中文</option><option value="en">English</option><option value="ja">日本語</option><option value="ko">한국어</option><option value="yue">粤语</option></select></label><span id="language-status">正在读取语种设置…</span></div><div id="latest">说完一句话并稍作停顿，三条路径会同时竞争。</div><div class="decision" id="decision"></div><div class="meter"><div id="bar"></div></div><div class="meta"><span id="level">输入电平 -- dBFS</span><span id="route">尚未选择路径</span><span id="latency">等待首句</span></div><div class="personalization"><div class="learning-head"><b>个性化纠错学习</b><span id="memory-status">尚未学习专有词</span></div><div class="learn-grid"><input id="corrected-text" maxlength="300" aria-label="正确文字" placeholder="说完一句后，在这里修改正确文字"><input id="hotword-text" maxlength="64" aria-label="重点专有词" placeholder="重点专有词（可选）"><button id="learn-button" type="button">纠正并学习</button></div><div class="memory-row"><div class="tags" id="hotword-tags"></div><button class="clear-memory" id="clear-memory" type="button">清空本语种记忆</button></div><div class="learn-result" id="learn-result"></div></div></section>
+<section class="card" id="card"><div class="status"><span class="dot"></span><span id="message">正在连接树莓派…</span></div><div class="language-control"><label for="language">识别语种<select id="language"><option value="auto">自动识别</option><option value="zh">中文</option><option value="en">English</option><option value="ja">日本語</option><option value="ko">한국어</option><option value="yue">粤语</option></select></label><span id="language-status">正在读取语种设置…</span></div><div class="conversation-head"><b>实时转写</b><button id="clear-display" type="button" title="仅清空显示，不删除后台记录">清空显示</button></div><div id="latest" role="log" aria-live="polite"><div id="conversation-final"></div><div id="partial-line" class="transcript-line partial" hidden></div><div id="conversation-empty" class="empty">请开始说话，识别文字会在这里逐步显示。</div></div><div class="archive-note">页面保留最近500条，最终转写同时保存在设备后台；清空显示不删除记录或纠错记忆。</div><div class="decision" id="decision"></div><div class="meter"><div id="bar"></div></div><div class="meta"><span id="level">输入电平 -- dBFS</span><span id="route">尚未选择路径</span><span id="latency">等待首句</span></div><div class="personalization"><div class="learning-head"><b>个性化纠错学习</b><span id="memory-status">尚未学习专有词</span></div><div class="learn-grid"><input id="corrected-text" maxlength="300" aria-label="正确文字" placeholder="说完一句后，在这里修改正确文字"><input id="hotword-text" maxlength="64" aria-label="重点专有词" placeholder="重点专有词（可选）"><button id="learn-button" type="button">纠正并学习</button></div><div class="memory-row"><div class="tags" id="hotword-tags"></div><button class="clear-memory" id="clear-memory" type="button">清空本语种记忆</button></div><div class="learn-result" id="learn-result"></div></div></section>
 <h2>候选对比</h2><div class="candidates" id="candidates"><div class="empty">完成第一句话后显示三路结果</div></div>
-<h2>本次转写</h2><div class="history" id="history"><div class="empty">还没有识别结果</div></div>
-</main><script>
+
+</main><script src="/transcript-view.js"></script><script>
 const labels={raw:'原始语音',gtcrn:'GTCRN',fastenhancer:'FastEnhancer-B',none:'未选择'};
 const languageNames={auto:'自动识别',zh:'中文',en:'English',ja:'日本語',ko:'한국어',yue:'粤语'};
 const languageSelect=document.getElementById('language');
@@ -780,6 +868,34 @@ const languageStatus=document.getElementById('language-status');
 const correctedInput=document.getElementById('corrected-text'),hotwordInput=document.getElementById('hotword-text');
 const learnButton=document.getElementById('learn-button'),learnResult=document.getElementById('learn-result');
 let lastCount=-1,languagePosting=false,currentState=null,correctionIndex=null,correctionObserved='';
+let correctionPosting=false,conversationSignature='';
+const displayBuffer=new TranscriptBuffer({getItem:key=>localStorage.getItem(key),setItem:(key,value)=>localStorage.setItem(key,value)});
+function renderConversation(s){
+  const view=displayBuffer.ingest(s),box=document.getElementById('latest');
+  const stick=box.scrollTop+box.clientHeight>=box.scrollHeight-50;
+  const signature=JSON.stringify(view.rows);
+  if(signature!==conversationSignature){
+    const fragment=document.createDocumentFragment();
+    for(const row of view.rows){
+      const line=document.createElement('div');line.className='transcript-line';
+      const text=document.createElement('div');text.textContent=row.text;line.appendChild(text);
+      const meta=document.createElement('small');meta.textContent=[row.language,row.latency_ms==null?'':`${row.latency_ms} ms`,row.user_corrected?'已纠正':''].filter(Boolean).join(' · ');line.appendChild(meta);fragment.appendChild(line);
+    }
+    document.getElementById('conversation-final').replaceChildren(fragment);conversationSignature=signature;
+  }
+  const draft=document.getElementById('partial-line');draft.hidden=!view.draft;
+  draft.textContent=view.draft?view.draft.text:'';
+  document.getElementById('conversation-empty').hidden=Boolean(view.rows.length||view.draft);
+  if(stick)box.scrollTop=box.scrollHeight;
+  const pending=Boolean(s.partial_active||s.speech_active||s.language_switching);
+  learnButton.disabled=correctionPosting||pending||correctionIndex==null;
+  correctedInput.disabled=pending;hotwordInput.disabled=pending;
+}
+document.getElementById('clear-display').addEventListener('click',()=>{
+  if(!currentState)return;
+  displayBuffer.clear(currentState);correctionIndex=null;correctedInput.value='';hotwordInput.value='';renderConversation(currentState);
+});
+
 function esc(s){const d=document.createElement('div');d.textContent=s??'';return d.innerHTML}
 async function changeLanguage(){
   const language=languageSelect.value;languagePosting=true;languageSelect.disabled=true;
@@ -793,9 +909,9 @@ async function learnCorrection(){
   const corrected=correctedInput.value.trim(),hotword=hotwordInput.value.trim();
   if(!currentState||correctionIndex==null){learnResult.textContent='请先说一句话';return}
   if(!corrected){learnResult.textContent='正确文字不能为空';return}
-  learnButton.disabled=true;learnResult.textContent='正在保存纠错并更新个人词库…';
+  correctionPosting=true;learnButton.disabled=true;learnResult.textContent='正在保存纠错并更新个人词库…';
   try{const r=await fetch('/api/correction',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({utterance_index:correctionIndex,language:currentState.language,observed:correctionObserved,corrected,hotword})});const result=await r.json();if(!r.ok)throw new Error(result.error||'学习失败');correctionObserved=corrected;hotwordInput.value='';lastCount=-1;learnResult.textContent=result.hotword?`已学习专有词：${result.hotword}`:'已保存纠错记忆';await refresh()}
-  catch(e){learnResult.textContent=e.message}finally{learnButton.disabled=false}
+  catch(e){learnResult.textContent=e.message}finally{correctionPosting=false;if(currentState)renderConversation(currentState)}
 }
 async function clearMemory(){
   if(!currentState||!confirm(`清空${languageNames[currentState.language]||currentState.language}的全部个性化记忆？`))return;
@@ -814,9 +930,10 @@ async function refresh(){try{
   document.getElementById('hotword-tags').innerHTML=s.personal_hotwords?.length?s.personal_hotwords.map(x=>`<span class="tag">${esc(x)}</span>`).join(''):'<span class="empty">暂无重点词</span>';
   document.getElementById('level').textContent=`输入电平 ${s.level_dbfs.toFixed(1)} dBFS`;document.getElementById('bar').style.width=`${Math.max(0,Math.min(100,(s.level_dbfs+70)*1.8))}%`;
   document.getElementById('latency').textContent=s.latest_latency_ms==null?'等待首句':`停顿后 ${s.latest_latency_ms} ms`;document.getElementById('route').textContent=s.latest_route?`胜出：${labels[s.latest_route]||s.latest_route}`:'尚未选择路径';
-  if(s.latest_text)document.getElementById('latest').textContent=s.latest_text;document.getElementById('decision').textContent=s.latest_reason?(s.latest_reason+` · 共识分 ${Number(s.latest_consensus_score||0).toFixed(2)}`):'';
+  document.getElementById('decision').textContent=s.partial_active?'识别中 · 临时文字可能修正':(s.latest_reason?(s.latest_reason+` · 共识分 ${Number(s.latest_consensus_score||0).toFixed(2)}`):'');
   if(s.latest_candidates?.length)document.getElementById('candidates').innerHTML=s.latest_candidates.map(x=>`<div class="candidate ${x.selected?'selected':''}"><b>${esc(x.label)}${x.selected?' · 胜出':''}</b><div class="txt">${esc(x.text)||'未识别到文字'}</div><small>共识 ${Number(x.consensus||0).toFixed(2)} · 音频安全 ${Number(x.acoustic_score||0).toFixed(2)} · ${x.total_ms} ms${x.personalization_applied?' · 已应用记忆':''}</small>${x.personalization_applied?`<small>模型原文：${esc(x.asr_text)}</small>`:''}${x.error?`<small> · ${esc(x.error)}</small>`:''}</div>`).join('');
-  if(s.utterance_count!==lastCount){lastCount=s.utterance_count;const latest=s.transcript?.[s.transcript.length-1];correctionIndex=latest?.index??null;correctionObserved=latest?.text||'';correctedInput.value=latest?.text||'';hotwordInput.value='';document.getElementById('history').innerHTML=s.transcript.length?s.transcript.slice().reverse().map(x=>`<div class="line">${esc(x.text)}<small>${esc(x.time)} · ${esc(x.language_label||languageNames[x.language]||'自动识别')} · ${esc(x.asr_backend||'ASR')} · ${esc(x.selected_label)} · 共识 ${Number(x.consensus_score).toFixed(2)} · ${x.latency_ms} ms${x.user_corrected?' · 用户已纠正':''}</small></div>`).join(''):'<div class="empty">还没有识别结果</div>'}
+  if(s.utterance_count!==lastCount){lastCount=s.utterance_count;const latest=s.transcript?.[s.transcript.length-1];correctionIndex=latest?.index??null;correctionObserved=latest?.text||'';correctedInput.value=latest?.text||'';hotwordInput.value=''}
+  renderConversation(s);
 }catch(e){document.getElementById('message').textContent='与树莓派断开连接，正在重试…'}}
 setInterval(refresh,250);refresh();
 </script></body></html>"""
@@ -850,6 +967,10 @@ class DemoHandler(BaseHTTPRequestHandler):
                 self.state.snapshot(), ensure_ascii=False
             ).encode("utf-8")
             content_type = "application/json; charset=utf-8"
+            status = 200
+        elif route == "/transcript-view.js":
+            payload = Path(__file__).with_name("transcript_view.js").read_bytes()
+            content_type = "application/javascript; charset=utf-8"
             status = 200
         else:
             payload = b"not found"
@@ -937,6 +1058,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--asr-threads", type=int, default=1)
     parser.add_argument("--language", choices=tuple(LANGUAGE_LABELS), default=None)
     parser.add_argument("--save-utterances", action="store_true")
+    parser.add_argument("--partial-preview", action=argparse.BooleanOptionalAction, default=True)
     return parser.parse_args()
 
 
@@ -971,6 +1093,9 @@ def main() -> int:
         native_hotword_bias=personalization_snapshot["native_hotword_bias"],
     )
     stop_event = threading.Event()
+    state.transcript = recent_transcripts(args.log_dir / "transcript_multicandidate.jsonl")
+    if state.transcript:
+        state.latest_text = state.transcript[-1]["text"]
     work_queue: queue.Queue[Utterance] = queue.Queue(maxsize=2)
 
     logging.info("loading three independent ASR recognizers")
@@ -1024,7 +1149,12 @@ def main() -> int:
     # CandidateWorker owns the recognizer dictionary from this point. Keeping the
     # main-frame reference would pin the startup language after the first switch.
     del recognizers
-    pipeline = AudioPipeline(args, state, work_queue, stop_event)
+    preview_worker = (PartialPreviewWorker(worker.decode_preview, state.publish_preview,
+                      state.preview_is_current, worker.final_busy, stop_event)
+                      if args.partial_preview else None)
+    pipeline = AudioPipeline(args, state, work_queue, stop_event, preview_worker)
+    if preview_worker is not None:
+        preview_worker.start()
     worker.start()
     pipeline.start()
 
@@ -1119,6 +1249,8 @@ def main() -> int:
         server.server_close()
         pipeline.join(timeout=3)
         worker.join(timeout=3)
+        if preview_worker is not None:
+            preview_worker.join(timeout=3)
     return 0
 
 
